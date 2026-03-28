@@ -214,7 +214,7 @@ export default function ContactClient() {
               <div className="flex flex-col gap-4">
                 <ContactInfoRow icon={<MapPinIcon />} label="Location" value="Kathmandu, Nepal" />
                 <ContactInfoRow icon={<MailIcon />} label="Email" value="hello@twakkaachar.com" />
-                <ContactInfoRow icon={<PhoneIcon />} label="WhatsApp" value="+977 98XXXXXXXX" />
+                <ContactInfoRow icon={<PhoneIcon />} label="WhatsApp" value="Message us on WhatsApp" />
               </div>
             </div>
 

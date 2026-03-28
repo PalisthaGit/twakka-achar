@@ -65,9 +65,8 @@ export default function OrderPage() {
     if (!validate()) return;
 
     // Open WhatsApp with pre-filled message
-    const waNumber = "9779800000000"; // replace with actual WhatsApp number
     const msg = buildWhatsAppMessage();
-    window.open(`https://wa.me/${waNumber}?text=${msg}`, "_blank");
+    window.open(`https://wa.me/9779803904724?text=${msg}`, "_blank");
 
     clearCart();
     setSubmitted(true);
