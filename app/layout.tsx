@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/src/components/layout/Navbar";
 import Footer from "@/src/components/layout/Footer";
 import { CartProvider } from "@/src/lib/CartContext";
+import WhatsAppButton from "@/src/components/ui/WhatsAppButton";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -18,7 +19,10 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Twakka Achar — Premium Nepali Pickles",
+  title: {
+    default: "Twakka Achar — Authentic Nepali Homemade Pickles | Add Twakka to Every Bite",
+    template: "%s | Twakka Achar",
+  },
   description:
     "Discover Twakka Achar's authentic, handcrafted Nepali pickles made with traditional recipes and the finest spices. Order premium achar online.",
 };
@@ -38,6 +42,7 @@ export default function RootLayout({
             <Navbar />
             <main className="flex-1 pt-16">{children}</main>
             <Footer />
+            <WhatsAppButton />
           </CartProvider>
         </body>
     </html>
