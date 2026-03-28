@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { products as allProducts } from "@/src/constants/products";
 import type { Product, SpiceLevel, ProductType } from "@/src/types/product";
+import { useCart } from "@/src/lib/CartContext";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,15 @@ function StarRating({ rating }: { rating: number }) {
 // ─── Product Card ─────────────────────────────────────────────────────────────
 
 function ProductCard({ product }: { product: Product }) {
+  const { addToCart } = useCart();
+  const [added, setAdded] = useState(false);
+
+  function handleAddToCart() {
+    addToCart(product);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-spice-gold/10 flex flex-col overflow-hidden hover:shadow-md transition-shadow">
       {/* Image placeholder */}
@@ -86,9 +96,10 @@ function ProductCard({ product }: { product: Product }) {
         <div className="flex gap-2 mt-1 font-body">
           <button
             disabled={!product.inStock}
+            onClick={handleAddToCart}
             className="flex-1 bg-chilli-red hover:bg-chilli-red/90 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-full transition-colors"
           >
-            Add to Cart
+            {added ? "Added ✓" : "Add to Cart"}
           </button>
           <Link
             href={`/products/${product.id}`}

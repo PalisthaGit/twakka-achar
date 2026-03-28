@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Product } from "@/src/types/product";
+import { useCart } from "@/src/lib/CartContext";
 
 // ─── Star Rating ──────────────────────────────────────────────────────────────
 
@@ -37,6 +39,15 @@ function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
 // ─── Related Product Card ─────────────────────────────────────────────────────
 
 function RelatedProductCard({ product }: { product: Product }) {
+  const { addToCart } = useCart();
+  const [added, setAdded] = useState(false);
+
+  function handleAddToCart() {
+    addToCart(product);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-spice-gold/10 flex flex-col overflow-hidden hover:shadow-md transition-shadow">
       <div className="aspect-[4/3] bg-cream flex items-center justify-center border-b border-spice-gold/10 relative">
@@ -68,9 +79,10 @@ function RelatedProductCard({ product }: { product: Product }) {
         <div className="flex gap-2 mt-1 font-body">
           <button
             disabled={!product.inStock}
+            onClick={handleAddToCart}
             className="flex-1 bg-chilli-red hover:bg-chilli-red/90 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-full transition-colors"
           >
-            Add to Cart
+            {added ? "Added ✓" : "Add to Cart"}
           </button>
           <Link
             href={`/products/${product.id}`}
@@ -263,14 +275,19 @@ function ProductTabs({ product }: { product: Product }) {
 
 // ─── Quantity Selector ────────────────────────────────────────────────────────
 
-function QuantitySelector() {
-  const [qty, setQty] = useState(1);
+function QuantitySelector({
+  qty,
+  setQty,
+}: {
+  qty: number;
+  setQty: (q: number) => void;
+}) {
   return (
     <div className="flex items-center gap-3">
       <span className="font-body text-sm text-muted-text">Qty:</span>
       <div className="flex items-center border border-spice-gold/30 rounded-full overflow-hidden">
         <button
-          onClick={() => setQty((q) => Math.max(1, q - 1))}
+          onClick={() => setQty(Math.max(1, qty - 1))}
           className="w-9 h-9 flex items-center justify-center text-dark-text hover:bg-cream transition-colors font-body text-lg"
           aria-label="Decrease quantity"
         >
@@ -280,7 +297,7 @@ function QuantitySelector() {
           {qty}
         </span>
         <button
-          onClick={() => setQty((q) => q + 1)}
+          onClick={() => setQty(qty + 1)}
           className="w-9 h-9 flex items-center justify-center text-dark-text hover:bg-cream transition-colors font-body text-lg"
           aria-label="Increase quantity"
         >
@@ -337,6 +354,21 @@ interface Props {
 
 export default function ProductDetailClient({ product, related }: Props) {
   const reviewCount = MOCK_REVIEWS.length;
+  const { addToCart } = useCart();
+  const router = useRouter();
+  const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState(false);
+
+  function handleAddToCart() {
+    addToCart(product, qty);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
+
+  function handleBuyNow() {
+    addToCart(product, qty);
+    router.push("/cart");
+  }
 
   return (
     <div className="bg-cream min-h-screen">
@@ -404,18 +436,23 @@ export default function ProductDetailClient({ product, related }: Props) {
             <div className="h-px bg-spice-gold/10" />
 
             {/* Quantity */}
-            <QuantitySelector />
+            <QuantitySelector qty={qty} setQty={setQty} />
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <button className="flex-1 border-2 border-chilli-red text-chilli-red hover:bg-chilli-red/5 font-body font-semibold py-3.5 rounded-full transition-colors text-sm">
+              <button
+                onClick={handleBuyNow}
+                disabled={!product.inStock}
+                className="flex-1 border-2 border-chilli-red text-chilli-red hover:bg-chilli-red/5 disabled:opacity-40 disabled:cursor-not-allowed font-body font-semibold py-3.5 rounded-full transition-colors text-sm"
+              >
                 Buy Now
               </button>
               <button
                 disabled={!product.inStock}
+                onClick={handleAddToCart}
                 className="flex-1 bg-chilli-red hover:bg-chilli-red/90 disabled:opacity-40 disabled:cursor-not-allowed text-white font-body font-semibold py-3.5 rounded-full transition-colors text-sm"
               >
-                {product.inStock ? "Add to Cart" : "Out of Stock"}
+                {!product.inStock ? "Out of Stock" : added ? "Added ✓" : "Add to Cart"}
               </button>
             </div>
 
