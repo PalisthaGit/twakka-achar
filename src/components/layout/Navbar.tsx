@@ -87,14 +87,7 @@ export default function Navbar() {
         </nav>
 
         {/* Desktop icon actions */}
-        <div className="hidden md:flex items-center gap-4 shrink-0 ml-2">
-          <Link
-            href="/account"
-            className="text-cream hover:text-spice-gold transition-colors"
-            aria-label="Account"
-          >
-            <AccountIcon />
-          </Link>
+        <div className="hidden md:flex items-center shrink-0 ml-2">
           <Link
             href="/cart"
             className="relative text-cream hover:text-spice-gold transition-colors"
@@ -170,13 +163,6 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <Link
-              href="/account"
-              className="text-cream text-sm font-medium hover:text-spice-gold transition-colors py-2"
-              onClick={() => setMenuOpen(false)}
-            >
-              Account
-            </Link>
           </nav>
         </div>
       )}
@@ -204,25 +190,6 @@ function SearchIcon() {
   );
 }
 
-function AccountIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-    </svg>
-  );
-}
 
 function CartIcon() {
   return (
