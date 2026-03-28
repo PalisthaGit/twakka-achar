@@ -44,19 +44,25 @@ export default function OrderPage() {
 
   function buildWhatsAppMessage(): string {
     const itemLines = items
-      .map((i) => `• ${i.product.name} x${i.quantity} — ₹${i.product.price * i.quantity}`)
+      .map((i) => `🌶️ ${i.product.name} x${i.quantity} — ₹${i.product.price * i.quantity}`)
       .join("\n");
 
+    const instructions = fields.instructions.trim() || "None";
+
     return encodeURIComponent(
-      `🌶️ *New Order — Twakka Achar*\n\n` +
-        `*Customer:* ${fields.fullName}\n` +
-        `*Phone:* ${fields.phone}\n` +
-        `*Address:* ${fields.address}, ${fields.city}\n` +
-        (fields.instructions ? `*Instructions:* ${fields.instructions}\n` : "") +
-        `\n*Order Items:*\n${itemLines}\n\n` +
-        `*Subtotal:* ₹${subtotal}\n` +
-        `*Delivery:* ₹${DELIVERY_FEE}\n` +
-        `*Total:* ₹${total}`
+      `🛒 *New Order from Twakka Achar*\n\n` +
+        `*Customer Details:*\n` +
+        `Name: ${fields.fullName}\n` +
+        `Phone: ${fields.phone}\n` +
+        `Address: ${fields.address}, ${fields.city}\n` +
+        `Special Instructions: ${instructions}\n\n` +
+        `*Order Items:*\n${itemLines}\n\n` +
+        `*Order Summary:*\n` +
+        `Subtotal: ₹${subtotal}\n` +
+        `Delivery: ₹${DELIVERY_FEE}\n` +
+        `*Total: ₹${total}*\n\n` +
+        `Payment: Cash on Delivery\n\n` +
+        `Thank you for ordering from Twakka Achar! 🙏`
     );
   }
 
@@ -84,6 +90,28 @@ export default function OrderPage() {
 
   if (submitted) {
     return <SuccessScreen />;
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-spice-gold/10 p-10 max-w-md w-full text-center">
+          <div className="text-7xl mb-6">🛒</div>
+          <h2 className="font-heading font-bold text-dark-text text-2xl mb-2">
+            Your cart is empty
+          </h2>
+          <p className="text-muted-text font-body text-sm mb-8">
+            Add some delicious achar to your cart before placing an order.
+          </p>
+          <Link
+            href="/products"
+            className="inline-block bg-chilli-red hover:bg-chilli-red/90 text-cream font-body font-semibold text-sm rounded-full px-8 py-3 transition-colors"
+          >
+            Browse Products
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
