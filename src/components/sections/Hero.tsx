@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Hero() {
   return (
@@ -37,15 +38,16 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Right — placeholder hero image */}
+        {/* Right — hero image */}
         <div className="flex-1 w-full max-w-md lg:max-w-none">
-          <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-spice-gold/10 border border-spice-gold/20 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-spice-gold/60">
-              <span className="text-7xl">🥣</span>
-              <span className="text-sm font-body font-medium tracking-wide">
-                Hero Image — coming soon
-              </span>
-            </div>
+          <div className="relative w-full aspect-square">
+            <Image
+              src="/hero.png"
+              alt="Bowl of Twakka Achar surrounded by fresh chillies, garlic, and lime"
+              fill
+              className="object-contain drop-shadow-2xl"
+              priority
+            />
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const products = [
   {
@@ -82,9 +83,15 @@ export default function FeaturedProducts() {
               key={product.id}
               className="bg-white rounded-2xl shadow-sm border border-spice-gold/10 flex flex-col overflow-hidden hover:shadow-md transition-shadow"
             >
-              {/* Product image placeholder */}
-              <div className="aspect-[4/3] bg-cream flex items-center justify-center border-b border-spice-gold/10">
-                <span className="text-6xl">{product.emoji}</span>
+              {/* Product image */}
+              <div className="aspect-[4/3] bg-cream border-b border-spice-gold/10 relative overflow-hidden">
+                <Image
+                  src="/image.png"
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
               </div>
 
               {/* Card body */}

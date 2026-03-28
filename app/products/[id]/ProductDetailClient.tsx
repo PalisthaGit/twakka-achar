@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Product } from "@/src/types/product";
 import { useCart } from "@/src/lib/CartContext";
@@ -50,8 +51,14 @@ function RelatedProductCard({ product }: { product: Product }) {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-spice-gold/10 flex flex-col overflow-hidden hover:shadow-md transition-shadow">
-      <div className="aspect-[4/3] bg-cream flex items-center justify-center border-b border-spice-gold/10 relative">
-        <span className="text-6xl">{product.emoji}</span>
+      <div className="aspect-[4/3] bg-cream border-b border-spice-gold/10 relative overflow-hidden">
+        <Image
+          src="/image.png"
+          alt={product.name}
+          fill
+          className="object-cover"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        />
         {!product.inStock && (
           <span className="absolute top-3 right-3 bg-muted-text text-white text-xs font-semibold px-2.5 py-1 rounded-full font-body">
             Out of stock
@@ -322,8 +329,15 @@ function ImageGallery({ product }: { product: Product }) {
   return (
     <div className="flex flex-col gap-4">
       {/* Main image */}
-      <div className="aspect-square rounded-3xl bg-white border border-spice-gold/10 shadow-sm flex items-center justify-center">
-        <span className="text-[8rem] select-none">{product.emoji}</span>
+      <div className="aspect-square rounded-3xl bg-white border border-spice-gold/10 shadow-sm relative overflow-hidden">
+        <Image
+          src="/image.png"
+          alt={product.name}
+          fill
+          className="object-cover"
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          priority
+        />
       </div>
       {/* Thumbnails */}
       <div className="grid grid-cols-4 gap-3">
@@ -331,13 +345,19 @@ function ImageGallery({ product }: { product: Product }) {
           <button
             key={i}
             onClick={() => setActiveThumb(i)}
-            className={`aspect-square rounded-2xl border-2 flex items-center justify-center transition-colors ${
+            className={`aspect-square rounded-2xl border-2 relative overflow-hidden transition-colors ${
               activeThumb === i
                 ? "border-spice-gold"
                 : "border-spice-gold/10 hover:border-spice-gold/40"
             } ${tint}`}
           >
-            <span className="text-3xl select-none">{product.emoji}</span>
+            <Image
+              src="/image.png"
+              alt={`${product.name} view ${i + 1}`}
+              fill
+              className="object-cover"
+              sizes="10vw"
+            />
           </button>
         ))}
       </div>
