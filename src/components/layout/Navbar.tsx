@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/src/lib/CartContext";
 
 const navLinks = [
@@ -13,7 +14,32 @@ const navLinks = [
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { totalItems: cartCount } = useCart();
+  const router = useRouter();
+
+  function handleSearch(query: string) {
+    const trimmed = query.trim();
+    if (trimmed) {
+      router.push(`/products?search=${encodeURIComponent(trimmed)}`);
+    } else {
+      router.push("/products");
+    }
+  }
+
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      handleSearch(searchQuery);
+      setMenuOpen(false);
+    }
+  }
+
+  function handleSearchChange(value: string) {
+    setSearchQuery(value);
+    if (value === "") {
+      router.push("/products");
+    }
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-chilli-red shadow-lg">
@@ -32,9 +58,13 @@ export default function Navbar() {
             <input
               type="search"
               placeholder="Search for achars..."
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               className="w-full rounded-full px-5 py-1.5 text-sm bg-cream text-dark-text placeholder:text-muted-text outline-none focus:ring-2 focus:ring-spice-gold font-body"
             />
             <button
+              onClick={() => handleSearch(searchQuery)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-text hover:text-spice-gold-dark transition-colors"
               aria-label="Search"
             >
@@ -113,11 +143,18 @@ export default function Navbar() {
               <input
                 type="search"
                 placeholder="Search for achars..."
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
                 className="w-full rounded-full px-5 py-2 text-sm bg-cream text-dark-text placeholder:text-muted-text outline-none focus:ring-2 focus:ring-spice-gold"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-text">
+              <button
+                onClick={() => { handleSearch(searchQuery); setMenuOpen(false); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-text hover:text-spice-gold-dark transition-colors"
+                aria-label="Search"
+              >
                 <SearchIcon />
-              </span>
+              </button>
             </div>
           </div>
 

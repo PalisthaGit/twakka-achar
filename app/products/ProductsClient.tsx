@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { products as allProducts } from "@/src/constants/products";
 import type { Product, SpiceLevel, ProductType } from "@/src/types/product";
 import { useCart } from "@/src/lib/CartContext";
@@ -277,7 +278,20 @@ function applyFilters(products: Product[], f: FilterState): Product[] {
   });
 }
 
+function applySearch(products: Product[], query: string): Product[] {
+  if (!query) return products;
+  const lower = query.toLowerCase();
+  return products.filter(
+    (p) =>
+      p.name.toLowerCase().includes(lower) ||
+      p.description.toLowerCase().includes(lower)
+  );
+}
+
 export default function ProductsClient() {
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("search") ?? "";
+
   const [filters, setFilters] = useState<FilterState>({
     spiceLevel: "",
     types: [],
@@ -286,7 +300,8 @@ export default function ProductsClient() {
   });
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  const filtered = applyFilters(allProducts, filters);
+  const afterSearch = applySearch(allProducts, searchQuery);
+  const filtered = applyFilters(afterSearch, filters);
 
   return (
     <div className="bg-cream min-h-screen">
@@ -317,7 +332,9 @@ export default function ProductsClient() {
         {/* Mobile filter toggle */}
         <div className="flex items-center justify-between mb-6 lg:hidden">
           <span className="text-sm font-body text-muted-text">
-            {filtered.length} product{filtered.length !== 1 ? "s" : ""} found
+            {searchQuery
+              ? `${filtered.length} result${filtered.length !== 1 ? "s" : ""} for "${searchQuery}"`
+              : `${filtered.length} product${filtered.length !== 1 ? "s" : ""} found`}
           </span>
           <button
             onClick={() => setMobileFilterOpen((o) => !o)}
@@ -349,21 +366,32 @@ export default function ProductsClient() {
 
           {/* Product grid */}
           <div className="flex-1 min-w-0">
-            <div className="hidden lg:flex items-center justify-between mb-6">
-              <span className="text-sm font-body text-muted-text">
-                {filtered.length} product{filtered.length !== 1 ? "s" : ""}{" "}
-                found
-              </span>
+            <div className="flex items-center justify-between mb-6">
+              {searchQuery ? (
+                <span className="text-sm font-body text-muted-text">
+                  {filtered.length} result{filtered.length !== 1 ? "s" : ""}{" "}
+                  for &ldquo;{searchQuery}&rdquo;
+                </span>
+              ) : (
+                <span className="text-sm font-body text-muted-text">
+                  {filtered.length} product{filtered.length !== 1 ? "s" : ""}{" "}
+                  found
+                </span>
+              )}
             </div>
 
             {filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <span className="text-5xl mb-4">🫙</span>
                 <p className="font-heading text-dark-text text-xl font-bold">
-                  No products match your filters
+                  {searchQuery
+                    ? `No products found for "${searchQuery}"`
+                    : "No products match your filters"}
                 </p>
                 <p className="text-muted-text text-sm font-body mt-2">
-                  Try adjusting or resetting the filters.
+                  {searchQuery
+                    ? "Try a different search term."
+                    : "Try adjusting or resetting the filters."}
                 </p>
               </div>
             ) : (
