@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useForm } from "@formspree/react";
 import { useCart } from "@/src/lib/CartContext";
 
 const DELIVERY_FEE = 70;
 const GIFT_FEE = 50;
-const SHEETS_URL =
-  "https://script.google.com/macros/s/AKfycbwhkswm61aBOtLJKgy2A_fxtxy065-vKDv_O5Z7n3qCdEa93KkV4GKp3prsZW2LQUkQug/exec";
 
 interface FormFields {
   fullName: string;
@@ -31,6 +30,9 @@ export default function OrderPage() {
   const { items, subtotal, clearCart, giftPackaging, giftMessage } = useCart();
   const giftFee = giftPackaging ? GIFT_FEE : 0;
   const total = subtotal + DELIVERY_FEE + giftFee;
+
+  const [state, handleSubmit] = useForm("xgopakvv");
+  const hiddenFormRef = useRef<HTMLFormElement>(null);
 
   const [fields, setFields] = useState<FormFields>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<FormFields>>({});
@@ -79,7 +81,7 @@ export default function OrderPage() {
     );
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleOrder(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!validate()) return;
 
@@ -92,31 +94,31 @@ export default function OrderPage() {
       timeStyle: "short",
     });
 
-    const orderData = {
-      orderId,
-      date,
-      name: fields.fullName,
-      phone: fields.phone,
-      address: fields.address,
-      city: fields.city,
-      items: items.map((i) => `${i.product.name} x${i.quantity}`).join(", "),
-      subtotal,
-      delivery: DELIVERY_FEE,
-      giftPackaging: giftPackaging ? "Yes" : "No",
-      giftMessage: giftMessage || "",
-      total,
-    };
+    const itemsText = items
+      .map((i) => `${i.product.name} x${i.quantity} — ₹${i.product.price * i.quantity}`)
+      .join(", ");
 
-    // Send to Google Sheets (fire and forget — GAS doesn't send CORS headers)
-    try {
-      await fetch(SHEETS_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
-      });
-    } catch {
-      // Don't block order flow on sheet errors
+    // Populate hidden form inputs and programmatically submit to Formspree
+    const form = hiddenFormRef.current;
+    if (form) {
+      (form.elements.namedItem("Order_ID") as HTMLInputElement).value = orderId;
+      (form.elements.namedItem("Date") as HTMLInputElement).value = date;
+      (form.elements.namedItem("Customer_Name") as HTMLInputElement).value = fields.fullName;
+      (form.elements.namedItem("Phone") as HTMLInputElement).value = fields.phone;
+      (form.elements.namedItem("Address") as HTMLInputElement).value = fields.address;
+      (form.elements.namedItem("City") as HTMLInputElement).value = fields.city;
+      (form.elements.namedItem("Special_Instructions") as HTMLInputElement).value =
+        fields.instructions || "None";
+      (form.elements.namedItem("Items") as HTMLInputElement).value = itemsText;
+      (form.elements.namedItem("Subtotal") as HTMLInputElement).value = String(subtotal);
+      (form.elements.namedItem("Delivery_Fee") as HTMLInputElement).value = String(DELIVERY_FEE);
+      (form.elements.namedItem("Gift_Packaging") as HTMLInputElement).value = giftPackaging
+        ? "Yes"
+        : "No";
+      (form.elements.namedItem("Gift_Message") as HTMLInputElement).value = giftMessage || "None";
+      (form.elements.namedItem("Total") as HTMLInputElement).value = String(total);
+
+      form.requestSubmit();
     }
 
     // Save order details for confirmation page
@@ -163,6 +165,8 @@ export default function OrderPage() {
     }
   }
 
+  const formspreeErrors = state.errors ? state.errors.getFormErrors() : [];
+
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-cream flex items-center justify-center px-4">
@@ -187,6 +191,23 @@ export default function OrderPage() {
 
   return (
     <div className="min-h-screen bg-cream">
+      {/* Hidden Formspree form */}
+      <form ref={hiddenFormRef} onSubmit={handleSubmit} style={{ display: "none" }}>
+        <input type="hidden" name="Order_ID" />
+        <input type="hidden" name="Date" />
+        <input type="hidden" name="Customer_Name" />
+        <input type="hidden" name="Phone" />
+        <input type="hidden" name="Address" />
+        <input type="hidden" name="City" />
+        <input type="hidden" name="Special_Instructions" />
+        <input type="hidden" name="Items" />
+        <input type="hidden" name="Subtotal" />
+        <input type="hidden" name="Delivery_Fee" />
+        <input type="hidden" name="Gift_Packaging" />
+        <input type="hidden" name="Gift_Message" />
+        <input type="hidden" name="Total" />
+      </form>
+
       {/* Breadcrumb */}
       <div className="bg-chilli-red py-3">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -214,7 +235,7 @@ export default function OrderPage() {
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Order Form */}
-          <form onSubmit={handleSubmit} noValidate className="flex-1">
+          <form onSubmit={handleOrder} noValidate className="flex-1">
             <div className="bg-white rounded-2xl shadow-sm border border-spice-gold/10 p-6 sm:p-8">
               <h2 className="font-heading font-bold text-dark-text text-xl mb-6">
                 Delivery Details
@@ -279,13 +300,23 @@ export default function OrderPage() {
                 </div>
               </div>
 
+              {formspreeErrors.length > 0 && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                  {formspreeErrors.map((err, i) => (
+                    <p key={i} className="text-sm text-red-600 font-body">
+                      {err.message}
+                    </p>
+                  ))}
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || state.submitting}
                 className="mt-8 w-full flex items-center justify-center gap-2 bg-chilli-red hover:bg-chilli-red/90 disabled:opacity-60 disabled:cursor-not-allowed text-cream font-body font-semibold text-sm rounded-full py-3.5 transition-colors"
               >
                 <WhatsAppIcon />
-                {loading ? "Placing Order…" : "Place Order via WhatsApp"}
+                {loading || state.submitting ? "Placing Order…" : "Place Order via WhatsApp"}
               </button>
 
               <p className="text-center text-xs text-muted-text font-body mt-3">
