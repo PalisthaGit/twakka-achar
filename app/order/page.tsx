@@ -2,9 +2,13 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/src/lib/CartContext";
 
 const DELIVERY_FEE = 70;
+const GIFT_FEE = 50;
+const SHEETS_URL =
+  "https://script.google.com/macros/s/AKfycbwhkswm61aBOtLJKgy2A_fxtxy065-vKDv_O5Z7n3qCdEa93KkV4GKp3prsZW2LQUkQug/exec";
 
 interface FormFields {
   fullName: string;
@@ -22,16 +26,15 @@ const EMPTY_FORM: FormFields = {
   instructions: "",
 };
 
-const GIFT_FEE = 50;
-
 export default function OrderPage() {
+  const router = useRouter();
   const { items, subtotal, clearCart, giftPackaging, giftMessage } = useCart();
   const giftFee = giftPackaging ? GIFT_FEE : 0;
   const total = subtotal + DELIVERY_FEE + giftFee;
 
   const [fields, setFields] = useState<FormFields>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<FormFields>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   function validate(): boolean {
     const newErrors: Partial<FormFields> = {};
@@ -45,7 +48,7 @@ export default function OrderPage() {
     return Object.keys(newErrors).length === 0;
   }
 
-  function buildWhatsAppMessage(): string {
+  function buildWhatsAppMessage(orderId: string): string {
     const itemLines = items
       .map((i) => `🌶️ ${i.product.name} x${i.quantity} — ₹${i.product.price * i.quantity}`)
       .join("\n");
@@ -57,7 +60,8 @@ export default function OrderPage() {
       : "";
 
     return encodeURIComponent(
-      `🛒 *New Order from Twakka Achar*\n\n` +
+      `🛒 *New Order from Twakka Achar*\n` +
+        `🆔 *Order ID: ${orderId}*\n\n` +
         `*Customer Details:*\n` +
         `Name: ${fields.fullName}\n` +
         `Phone: ${fields.phone}\n` +
@@ -75,16 +79,78 @@ export default function OrderPage() {
     );
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!validate()) return;
 
-    // Open WhatsApp with pre-filled message
-    const msg = buildWhatsAppMessage();
+    setLoading(true);
+
+    const orderId = `TW-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+    const date = new Date().toLocaleString("en-IN", {
+      timeZone: "Asia/Kathmandu",
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+    const orderData = {
+      orderId,
+      date,
+      name: fields.fullName,
+      phone: fields.phone,
+      address: fields.address,
+      city: fields.city,
+      items: items.map((i) => `${i.product.name} x${i.quantity}`).join(", "),
+      subtotal,
+      delivery: DELIVERY_FEE,
+      giftPackaging: giftPackaging ? "Yes" : "No",
+      giftMessage: giftMessage || "",
+      total,
+    };
+
+    // Send to Google Sheets (fire and forget — GAS doesn't send CORS headers)
+    try {
+      await fetch(SHEETS_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      });
+    } catch {
+      // Don't block order flow on sheet errors
+    }
+
+    // Save order details for confirmation page
+    localStorage.setItem(
+      "twakka-last-order",
+      JSON.stringify({
+        orderId,
+        date,
+        name: fields.fullName,
+        phone: fields.phone,
+        address: fields.address,
+        city: fields.city,
+        lineItems: items.map((i) => ({
+          name: i.product.name,
+          emoji: i.product.emoji,
+          quantity: i.quantity,
+          price: i.product.price,
+        })),
+        subtotal,
+        delivery: DELIVERY_FEE,
+        giftPackaging,
+        giftFee,
+        giftMessage,
+        total,
+      })
+    );
+
+    // Open WhatsApp
+    const msg = buildWhatsAppMessage(orderId);
     window.open(`https://wa.me/9779803904724?text=${msg}`, "_blank");
 
+    // Clear cart then navigate
     clearCart();
-    setSubmitted(true);
+    router.push("/order-confirmation");
   }
 
   function handleChange(
@@ -95,10 +161,6 @@ export default function OrderPage() {
     if (errors[name as keyof FormFields]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
-  }
-
-  if (submitted) {
-    return <SuccessScreen />;
   }
 
   if (items.length === 0) {
@@ -159,7 +221,6 @@ export default function OrderPage() {
               </h2>
 
               <div className="flex flex-col gap-5">
-                {/* Full Name */}
                 <Field
                   label="Full Name"
                   name="fullName"
@@ -170,8 +231,6 @@ export default function OrderPage() {
                   error={errors.fullName}
                   required
                 />
-
-                {/* Phone */}
                 <Field
                   label="Phone Number"
                   name="phone"
@@ -182,8 +241,6 @@ export default function OrderPage() {
                   error={errors.phone}
                   required
                 />
-
-                {/* Address */}
                 <Field
                   label="Delivery Address"
                   name="address"
@@ -194,8 +251,6 @@ export default function OrderPage() {
                   error={errors.address}
                   required
                 />
-
-                {/* City */}
                 <Field
                   label="City"
                   name="city"
@@ -206,8 +261,6 @@ export default function OrderPage() {
                   error={errors.city}
                   required
                 />
-
-                {/* Special Instructions */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-dark-text font-body">
                     Special Instructions
@@ -228,10 +281,11 @@ export default function OrderPage() {
 
               <button
                 type="submit"
-                className="mt-8 w-full flex items-center justify-center gap-2 bg-chilli-red hover:bg-chilli-red/90 text-cream font-body font-semibold text-sm rounded-full py-3.5 transition-colors"
+                disabled={loading}
+                className="mt-8 w-full flex items-center justify-center gap-2 bg-chilli-red hover:bg-chilli-red/90 disabled:opacity-60 disabled:cursor-not-allowed text-cream font-body font-semibold text-sm rounded-full py-3.5 transition-colors"
               >
                 <WhatsAppIcon />
-                Place Order via WhatsApp
+                {loading ? "Placing Order…" : "Place Order via WhatsApp"}
               </button>
 
               <p className="text-center text-xs text-muted-text font-body mt-3">
@@ -247,64 +301,50 @@ export default function OrderPage() {
                 Order Summary
               </h2>
 
-              {items.length === 0 ? (
-                <p className="text-muted-text text-sm font-body">
-                  Your cart is empty.{" "}
-                  <Link href="/products" className="text-chilli-red underline">
-                    Browse products
-                  </Link>
-                </p>
-              ) : (
-                <>
-                  <div className="flex flex-col gap-3 mb-4">
-                    {items.map((item) => (
-                      <div
-                        key={item.product.id}
-                        className="flex items-center gap-3"
-                      >
-                        <span className="text-xl">{item.product.emoji}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium font-body text-dark-text truncate">
-                            {item.product.name}
-                          </p>
-                          <p className="text-xs text-muted-text font-body">
-                            Qty: {item.quantity}
-                          </p>
-                        </div>
-                        <span className="text-sm font-body font-semibold text-spice-gold shrink-0">
-                          ₹{item.product.price * item.quantity}
-                        </span>
-                      </div>
-                    ))}
+              <div className="flex flex-col gap-3 mb-4">
+                {items.map((item) => (
+                  <div key={item.product.id} className="flex items-center gap-3">
+                    <span className="text-xl">{item.product.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium font-body text-dark-text truncate">
+                        {item.product.name}
+                      </p>
+                      <p className="text-xs text-muted-text font-body">
+                        Qty: {item.quantity}
+                      </p>
+                    </div>
+                    <span className="text-sm font-body font-semibold text-spice-gold shrink-0">
+                      ₹{item.product.price * item.quantity}
+                    </span>
                   </div>
+                ))}
+              </div>
 
-                  <div className="h-px bg-spice-gold/20 mb-4" />
+              <div className="h-px bg-spice-gold/20 mb-4" />
 
-                  <div className="flex flex-col gap-2 font-body text-sm">
-                    <div className="flex justify-between text-dark-text">
-                      <span className="text-muted-text">Subtotal</span>
-                      <span>₹{subtotal}</span>
-                    </div>
-                    <div className="flex justify-between text-dark-text">
-                      <span className="text-muted-text">Delivery</span>
-                      <span>₹{DELIVERY_FEE}</span>
-                    </div>
-                    {giftPackaging && (
-                      <div className="flex justify-between text-dark-text">
-                        <span className="text-muted-text">🎁 Gift Packaging</span>
-                        <span>₹{GIFT_FEE}</span>
-                      </div>
-                    )}
-                    <div className="h-px bg-spice-gold/20 my-1" />
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-dark-text">Total</span>
-                      <span className="font-bold text-spice-gold text-xl">
-                        ₹{total}
-                      </span>
-                    </div>
+              <div className="flex flex-col gap-2 font-body text-sm">
+                <div className="flex justify-between text-dark-text">
+                  <span className="text-muted-text">Subtotal</span>
+                  <span>₹{subtotal}</span>
+                </div>
+                <div className="flex justify-between text-dark-text">
+                  <span className="text-muted-text">Delivery</span>
+                  <span>₹{DELIVERY_FEE}</span>
+                </div>
+                {giftPackaging && (
+                  <div className="flex justify-between text-dark-text">
+                    <span className="text-muted-text">🎁 Gift Packaging</span>
+                    <span>₹{GIFT_FEE}</span>
                   </div>
-                </>
-              )}
+                )}
+                <div className="h-px bg-spice-gold/20 my-1" />
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-dark-text">Total</span>
+                  <span className="font-bold text-spice-gold text-xl">
+                    ₹{total}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -352,34 +392,7 @@ function Field({
             : "border-spice-gold/30"
         }`}
       />
-      {error && (
-        <p className="text-xs text-red-500 font-body">{error}</p>
-      )}
-    </div>
-  );
-}
-
-function SuccessScreen() {
-  return (
-    <div className="min-h-screen bg-cream flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl shadow-sm border border-spice-gold/10 p-10 max-w-md w-full text-center">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
-          <WhatsAppIcon size={32} color="#25D366" />
-        </div>
-        <h2 className="font-heading font-bold text-dark-text text-2xl mb-3">
-          Order Placed!
-        </h2>
-        <p className="text-muted-text font-body text-sm leading-relaxed mb-8">
-          Your order has been placed! We will contact you on WhatsApp to
-          confirm.
-        </p>
-        <Link
-          href="/products"
-          className="inline-block bg-chilli-red hover:bg-chilli-red/90 text-cream font-body font-semibold text-sm rounded-full px-8 py-3 transition-colors"
-        >
-          Continue Shopping
-        </Link>
-      </div>
+      {error && <p className="text-xs text-red-500 font-body">{error}</p>}
     </div>
   );
 }
