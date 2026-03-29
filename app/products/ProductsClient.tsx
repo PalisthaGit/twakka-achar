@@ -86,7 +86,7 @@ function ProductCard({ product }: { product: Product }) {
             {product.name}
           </h3>
           <span className="text-spice-gold font-semibold text-sm font-body whitespace-nowrap">
-            ₹{product.price} / jar
+            from Rs {product.price}
           </span>
         </div>
 

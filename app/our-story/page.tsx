@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Our Story — Twakka Achar",
+  title: "Our Story",
   description:
-    "From a family kitchen in Kathmandu to your table — the story behind Twakka Achar's authentic, handcrafted Nepali pickles.",
+    "Twakka Achar started in a small Kathmandu kitchen with traditional family recipes passed down through generations. Learn about our story.",
 };
 
 // ─── Values Data ──────────────────────────────────────────────────────────────

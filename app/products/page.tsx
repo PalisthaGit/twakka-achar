@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import ProductsClient from "./ProductsClient";
 
 export const metadata: Metadata = {
-  title: "Our Products — Twakka Achar | Premium Nepali Pickles",
+  title: "Shop All Nepali Achars and Pickles",
   description:
-    "Browse our full range of handcrafted Nepali achars — from fiery Timur to tangy Mango. Filter by spice level, type, and price.",
+    "Browse our full range of premium handcrafted Nepali achars. From Dalle Khursani to Lapsi, Timur to Mango. Two sizes available with home delivery.",
 };
 
 export default function ProductsPage() {

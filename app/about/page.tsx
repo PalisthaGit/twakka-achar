@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "About Us — Twakka Achar",
+  title: "About Us",
   description:
-    "Learn about Twakka Achar — our mission to bring authentic Nepali achar to every table with no compromise on taste or quality.",
+    "Learn about Twakka Achar, our mission to bring authentic Nepali flavours to every table with no compromise on taste or quality.",
 };
 
 const whyUs = [

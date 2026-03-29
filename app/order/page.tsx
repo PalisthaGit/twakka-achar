@@ -133,7 +133,7 @@ export default function OrderPage() {
         city: fields.city,
         lineItems: items.map((i) => ({
           name: i.product.name,
-          emoji: i.product.emoji,
+          emoji: "🫙",
           quantity: i.quantity,
           price: i.product.price,
         })),
@@ -335,7 +335,7 @@ export default function OrderPage() {
               <div className="flex flex-col gap-3 mb-4">
                 {items.map((item) => (
                   <div key={item.product.id} className="flex items-center gap-3">
-                    <span className="text-xl">{item.product.emoji}</span>
+                    <span className="text-xl">🫙</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium font-body text-dark-text truncate">
                         {item.product.name}

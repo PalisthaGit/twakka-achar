@@ -7,7 +7,7 @@ import { products as allProducts } from "@/src/constants/products";
 import { useCart } from "@/src/lib/CartContext";
 import type { Product } from "@/src/types/product";
 
-const featuredProducts = allProducts.slice(0, 3);
+const featuredProducts = allProducts.slice(0, 6);
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -64,7 +64,7 @@ function ProductCard({ product }: { product: Product }) {
             {product.name}
           </h3>
           <span className="text-spice-gold font-semibold text-sm font-body whitespace-nowrap">
-            ₹{product.price} / jar
+            from Rs {product.price}
           </span>
         </div>
 

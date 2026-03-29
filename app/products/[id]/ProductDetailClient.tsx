@@ -71,7 +71,7 @@ function RelatedProductCard({ product }: { product: Product }) {
             {product.name}
           </h3>
           <span className="text-spice-gold font-semibold text-sm font-body whitespace-nowrap">
-            ₹{product.price} / jar
+            from Rs {product.price}
           </span>
         </div>
         <p className="text-muted-text text-sm leading-relaxed font-body flex-1">
@@ -378,15 +378,18 @@ export default function ProductDetailClient({ product, related }: Props) {
   const router = useRouter();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [size, setSize] = useState<"small" | "large">("small");
+
+  const activePrice = size === "large" ? product.largePrice : product.price;
 
   function handleAddToCart() {
-    addToCart(product, qty);
+    addToCart({ ...product, price: activePrice }, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   }
 
   function handleBuyNow() {
-    addToCart(product, qty);
+    addToCart({ ...product, price: activePrice }, qty);
     router.push("/cart");
   }
 
@@ -436,12 +439,43 @@ export default function ProductDetailClient({ product, related }: Props) {
               {product.description}
             </p>
 
+            {/* Size selector */}
+            <div className="flex flex-col gap-2">
+              <span className="font-body text-sm text-muted-text font-semibold">
+                Choose size
+              </span>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setSize("small")}
+                  className={`flex-1 py-2.5 px-4 rounded-full border-2 text-sm font-semibold font-body transition-colors ${
+                    size === "small"
+                      ? "border-spice-gold bg-spice-gold/10 text-dark-text"
+                      : "border-spice-gold/20 text-muted-text hover:border-spice-gold/50"
+                  }`}
+                >
+                  Small 200g — Rs {product.price}
+                </button>
+                <button
+                  onClick={() => setSize("large")}
+                  className={`flex-1 py-2.5 px-4 rounded-full border-2 text-sm font-semibold font-body transition-colors ${
+                    size === "large"
+                      ? "border-spice-gold bg-spice-gold/10 text-dark-text"
+                      : "border-spice-gold/20 text-muted-text hover:border-spice-gold/50"
+                  }`}
+                >
+                  Large 400g — Rs {product.largePrice}
+                </button>
+              </div>
+            </div>
+
             {/* Price */}
             <div className="flex items-baseline gap-2">
               <span className="font-heading text-spice-gold text-3xl font-bold">
-                ₹{product.price}
+                Rs {activePrice}
               </span>
-              <span className="font-body text-muted-text text-sm">/ jar</span>
+              <span className="font-body text-muted-text text-sm">
+                / {size === "large" ? "400g jar" : "200g jar"}
+              </span>
             </div>
 
             {/* Star rating */}

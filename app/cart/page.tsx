@@ -53,9 +53,9 @@ export default function CartPage() {
                     key={item.product.id}
                     className="bg-white rounded-2xl shadow-sm border border-spice-gold/10 p-4 sm:p-5 flex gap-4"
                   >
-                    {/* Emoji image */}
+                    {/* Product image */}
                     <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-xl bg-cream flex items-center justify-center text-3xl sm:text-4xl">
-                      {item.product.emoji}
+                      🫙
                     </div>
 
                     <div className="flex-1 min-w-0">
