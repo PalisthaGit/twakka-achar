@@ -3,25 +3,129 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { useForm } from "@formspree/react";
 import { useCart } from "@/src/lib/CartContext";
 
 const DELIVERY_FEE = 70;
 const GIFT_FEE = 50;
 
+// --- Address data ---
+
+const CITIES = [
+  "Kathmandu",
+  "Lalitpur",
+  "Bhaktapur",
+  "Pokhara",
+  "Biratnagar",
+  "Birgunj",
+  "Dharan",
+  "Butwal",
+  "Hetauda",
+  "Chitwan",
+];
+
+type AreaInfo = { name: string; lat: number; lng: number };
+
+const AREA_MAP: Record<string, AreaInfo[]> = {
+  Kathmandu: [
+    { name: "Thamel", lat: 27.7149, lng: 85.3123 },
+    { name: "Baneshwor", lat: 27.6913, lng: 85.3417 },
+    { name: "Lazimpat", lat: 27.7214, lng: 85.3193 },
+    { name: "Maharajgunj", lat: 27.7369, lng: 85.3276 },
+    { name: "Koteshwor", lat: 27.6845, lng: 85.3558 },
+    { name: "Balkhu", lat: 27.689, lng: 85.2931 },
+    { name: "Kalimati", lat: 27.6963, lng: 85.3008 },
+    { name: "Kalanki", lat: 27.6965, lng: 85.2811 },
+    { name: "Chabahil", lat: 27.7186, lng: 85.3527 },
+    { name: "Budhanilkantha", lat: 27.79, lng: 85.3617 },
+    { name: "Bhaktapur Road", lat: 27.6962, lng: 85.3693 },
+    { name: "Putalisadak", lat: 27.7017, lng: 85.3191 },
+    { name: "New Road", lat: 27.7025, lng: 85.3138 },
+    { name: "Ratnapark", lat: 27.7031, lng: 85.3143 },
+    { name: "Boudha", lat: 27.7215, lng: 85.3621 },
+    { name: "Pashupatinath", lat: 27.7109, lng: 85.3484 },
+    { name: "Gongabu", lat: 27.7368, lng: 85.3108 },
+    { name: "Balaju", lat: 27.7337, lng: 85.3032 },
+    { name: "Swayambhu", lat: 27.7148, lng: 85.2907 },
+    { name: "Kirtipur", lat: 27.6781, lng: 85.2779 },
+  ],
+  Lalitpur: [
+    { name: "Patan", lat: 27.6641, lng: 85.324 },
+    { name: "Jawalakhel", lat: 27.6727, lng: 85.3165 },
+    { name: "Kupondole", lat: 27.6828, lng: 85.3199 },
+    { name: "Satdobato", lat: 27.6497, lng: 85.3299 },
+    { name: "Ekantakuna", lat: 27.6614, lng: 85.3278 },
+    { name: "Imadol", lat: 27.6565, lng: 85.3456 },
+    { name: "Balkumari", lat: 27.6772, lng: 85.3556 },
+    { name: "Lagankhel", lat: 27.6614, lng: 85.3163 },
+    { name: "Pulchowk", lat: 27.6801, lng: 85.3178 },
+    { name: "Sanepa", lat: 27.6793, lng: 85.3041 },
+  ],
+  Bhaktapur: [
+    { name: "Bhaktapur Durbar Square", lat: 27.6722, lng: 85.4278 },
+    { name: "Suryabinayak", lat: 27.6638, lng: 85.4366 },
+    { name: "Katunje", lat: 27.6552, lng: 85.418 },
+    { name: "Lokanthali", lat: 27.6847, lng: 85.4012 },
+    { name: "Sipadol", lat: 27.6671, lng: 85.4439 },
+  ],
+  Pokhara: [
+    { name: "Lakeside", lat: 28.2096, lng: 83.9587 },
+    { name: "Newroad", lat: 28.2331, lng: 83.9883 },
+    { name: "Mahendrapool", lat: 28.2362, lng: 83.9864 },
+    { name: "Bagar", lat: 28.2214, lng: 83.9781 },
+    { name: "Sabhagriha", lat: 28.2426, lng: 83.9934 },
+    { name: "Chipledhunga", lat: 28.2286, lng: 83.9913 },
+    { name: "Prithvichowk", lat: 28.2349, lng: 83.9872 },
+  ],
+};
+
+const CITY_CENTERS: Record<string, [number, number]> = {
+  Biratnagar: [26.4525, 87.2718],
+  Birgunj: [27.0104, 84.877],
+  Dharan: [26.8147, 87.2841],
+  Butwal: [27.7006, 83.4479],
+  Hetauda: [27.4153, 85.0315],
+  Chitwan: [27.5291, 84.3542],
+};
+
+function getAreaCenter(city: string, areaName: string): [number, number] {
+  const areas = AREA_MAP[city];
+  if (areas) {
+    const found = areas.find((a) => a.name === areaName);
+    if (found) return [found.lat, found.lng];
+  }
+  return CITY_CENTERS[city] ?? [27.7172, 85.324];
+}
+
+// --- Dynamic map import (SSR disabled) ---
+const MapPicker = dynamic(() => import("@/src/components/ui/MapPicker"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[300px] rounded-xl bg-cream border border-spice-gold/20 flex items-center justify-center text-muted-text text-sm font-body">
+      Loading map…
+    </div>
+  ),
+});
+
+// --- Form types ---
 interface FormFields {
   fullName: string;
   phone: string;
-  address: string;
   city: string;
+  area: string;
+  landmark: string;
+  houseDetails: string;
   instructions: string;
 }
 
 const EMPTY_FORM: FormFields = {
   fullName: "",
   phone: "",
-  address: "",
   city: "",
+  area: "",
+  landmark: "",
+  houseDetails: "",
   instructions: "",
 };
 
@@ -38,46 +142,104 @@ export default function OrderPage() {
   const [errors, setErrors] = useState<Partial<FormFields>>({});
   const [loading, setLoading] = useState(false);
 
+  // Map state
+  const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([27.7172, 85.324]);
+  const [mapPosition, setMapPosition] = useState<[number, number]>([27.7172, 85.324]);
+
+  const areas: AreaInfo[] = AREA_MAP[fields.city] ?? [];
+
+  function handleCityChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const city = e.target.value;
+    const cityAreas = AREA_MAP[city];
+    const defaultArea = cityAreas ? cityAreas[0].name : "Main Area";
+    const center = cityAreas
+      ? ([cityAreas[0].lat, cityAreas[0].lng] as [number, number])
+      : (CITY_CENTERS[city] ?? ([27.7172, 85.324] as [number, number]));
+
+    setFields((prev) => ({ ...prev, city, area: defaultArea }));
+    setMapCenter(center);
+    setMapPosition(center);
+    setMapCoords(null);
+    if (errors.city) setErrors((prev) => ({ ...prev, city: undefined }));
+    if (errors.area) setErrors((prev) => ({ ...prev, area: undefined }));
+  }
+
+  function handleAreaChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const area = e.target.value;
+    const center = getAreaCenter(fields.city, area);
+    setFields((prev) => ({ ...prev, area }));
+    setMapCenter(center);
+    setMapPosition(center);
+    setMapCoords(null);
+    if (errors.area) setErrors((prev) => ({ ...prev, area: undefined }));
+  }
+
+  function handleMapMove(lat: number, lng: number) {
+    setMapPosition([lat, lng]);
+    setMapCoords({ lat, lng });
+  }
+
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) {
+    const { name, value } = e.target;
+    setFields((prev) => ({ ...prev, [name]: value }));
+    if (errors[name as keyof FormFields]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  }
+
   function validate(): boolean {
     const newErrors: Partial<FormFields> = {};
     if (!fields.fullName.trim()) newErrors.fullName = "Full name is required";
     if (!fields.phone.trim()) newErrors.phone = "Phone number is required";
     else if (!/^\+?[0-9\s\-]{7,15}$/.test(fields.phone.trim()))
       newErrors.phone = "Enter a valid phone number";
-    if (!fields.address.trim()) newErrors.address = "Delivery address is required";
-    if (!fields.city.trim()) newErrors.city = "City is required";
+    if (!fields.city.trim()) newErrors.city = "Please select a city";
+    if (!fields.area.trim()) newErrors.area = "Please select an area";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
 
-  function buildWhatsAppMessage(orderId: string): string {
+  function buildAddressSummary(): string {
+    const parts = [fields.area, fields.city];
+    return parts.filter(Boolean).join(", ");
+  }
+
+  function buildWhatsAppMessage(orderId: string, date: string): string {
     const itemLines = items
-      .map((i) => `🌶️ ${i.product.name} x${i.quantity} — ₹${i.product.price * i.quantity}`)
+      .map((i) => `🌶️ ${i.product.name} x${i.quantity} = Rs ${i.product.price * i.quantity}`)
       .join("\n");
 
-    const instructions = fields.instructions.trim() || "None";
+    const coordsLine = mapCoords
+      ? `${mapCoords.lat.toFixed(6)}, ${mapCoords.lng.toFixed(6)}`
+      : "Not picked";
 
     const giftLine = giftPackaging
-      ? `🎁 Gift Packaging: Yes\n${giftMessage.trim() ? `💌 Gift Message: ${giftMessage.trim()}\n` : ""}`
-      : "";
+      ? `Yes Rs ${GIFT_FEE}`
+      : "No";
 
     return encodeURIComponent(
-      `🛒 *New Order from Twakka Achar*\n` +
-        `🆔 *Order ID: ${orderId}*\n\n` +
+      `🛒 *New Order Received!*\n` +
+        `*Order ID:* ${orderId}\n` +
+        `*Date:* ${date}\n\n` +
         `*Customer Details:*\n` +
-        `Name: ${fields.fullName}\n` +
-        `Phone: ${fields.phone}\n` +
-        `Address: ${fields.address}, ${fields.city}\n` +
-        `Special Instructions: ${instructions}\n\n` +
+        `👤 Name: ${fields.fullName}\n` +
+        `📞 Phone: ${fields.phone}\n\n` +
+        `*Delivery Address:*\n` +
+        `🏙️ City: ${fields.city}\n` +
+        `📍 Area: ${fields.area}\n` +
+        `🗺️ Map: ${coordsLine}\n` +
+        `🏠 Landmark: ${fields.landmark.trim() || "Not provided"}\n` +
+        `🚪 House: ${fields.houseDetails.trim() || "Not provided"}\n\n` +
         `*Order Items:*\n${itemLines}\n\n` +
-        (giftLine ? `*Gift Details:*\n${giftLine}\n` : "") +
         `*Order Summary:*\n` +
-        `Subtotal: ₹${subtotal}\n` +
-        `Delivery: ₹${DELIVERY_FEE}\n` +
-        (giftPackaging ? `Gift Packaging: ₹${GIFT_FEE}\n` : "") +
-        `*Total: ₹${total}*\n\n` +
-        `Payment: Cash on Delivery\n\n` +
-        `Thank you for ordering from Twakka Achar! 🙏`
+        `Subtotal: Rs ${subtotal}\n` +
+        `Delivery: Rs ${DELIVERY_FEE}\n` +
+        `Gift Packaging: ${giftLine}\n` +
+        `*TOTAL: Rs ${total}*\n\n` +
+        `Payment: Cash on Delivery`
     );
   }
 
@@ -98,15 +260,24 @@ export default function OrderPage() {
       .map((i) => `${i.product.name} x${i.quantity} — ₹${i.product.price * i.quantity}`)
       .join(", ");
 
-    // Populate hidden form inputs and programmatically submit to Formspree
+    const addressSummary = buildAddressSummary();
+    const coordsText = mapCoords
+      ? `${mapCoords.lat.toFixed(6)}, ${mapCoords.lng.toFixed(6)}`
+      : "Not picked";
+
     const form = hiddenFormRef.current;
     if (form) {
       (form.elements.namedItem("Order_ID") as HTMLInputElement).value = orderId;
       (form.elements.namedItem("Date") as HTMLInputElement).value = date;
       (form.elements.namedItem("Customer_Name") as HTMLInputElement).value = fields.fullName;
       (form.elements.namedItem("Phone") as HTMLInputElement).value = fields.phone;
-      (form.elements.namedItem("Address") as HTMLInputElement).value = fields.address;
       (form.elements.namedItem("City") as HTMLInputElement).value = fields.city;
+      (form.elements.namedItem("Area") as HTMLInputElement).value = fields.area;
+      (form.elements.namedItem("Map_Coordinates") as HTMLInputElement).value = coordsText;
+      (form.elements.namedItem("Landmark") as HTMLInputElement).value = fields.landmark || "None";
+      (form.elements.namedItem("House_Details") as HTMLInputElement).value =
+        fields.houseDetails || "None";
+      (form.elements.namedItem("Address") as HTMLInputElement).value = addressSummary;
       (form.elements.namedItem("Special_Instructions") as HTMLInputElement).value =
         fields.instructions || "None";
       (form.elements.namedItem("Items") as HTMLInputElement).value = itemsText;
@@ -121,7 +292,6 @@ export default function OrderPage() {
       form.requestSubmit();
     }
 
-    // Save order details for confirmation page
     localStorage.setItem(
       "twakka-last-order",
       JSON.stringify({
@@ -129,8 +299,12 @@ export default function OrderPage() {
         date,
         name: fields.fullName,
         phone: fields.phone,
-        address: fields.address,
+        address: addressSummary,
         city: fields.city,
+        area: fields.area,
+        mapCoords: coordsText,
+        landmark: fields.landmark || null,
+        houseDetails: fields.houseDetails || null,
         lineItems: items.map((i) => ({
           name: i.product.name,
           emoji: "🫙",
@@ -146,23 +320,11 @@ export default function OrderPage() {
       })
     );
 
-    // Open WhatsApp
-    const msg = buildWhatsAppMessage(orderId);
+    const msg = buildWhatsAppMessage(orderId, date);
     window.open(`https://wa.me/9779803904724?text=${msg}`, "_blank");
 
-    // Clear cart then navigate
     clearCart();
     router.push("/order-confirmation");
-  }
-
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) {
-    const { name, value } = e.target;
-    setFields((prev) => ({ ...prev, [name]: value }));
-    if (errors[name as keyof FormFields]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
   }
 
   const formspreeErrors = state.errors ? state.errors.getFormErrors() : [];
@@ -197,8 +359,12 @@ export default function OrderPage() {
         <input type="hidden" name="Date" />
         <input type="hidden" name="Customer_Name" />
         <input type="hidden" name="Phone" />
-        <input type="hidden" name="Address" />
         <input type="hidden" name="City" />
+        <input type="hidden" name="Area" />
+        <input type="hidden" name="Map_Coordinates" />
+        <input type="hidden" name="Landmark" />
+        <input type="hidden" name="House_Details" />
+        <input type="hidden" name="Address" />
         <input type="hidden" name="Special_Instructions" />
         <input type="hidden" name="Items" />
         <input type="hidden" name="Subtotal" />
@@ -216,10 +382,7 @@ export default function OrderPage() {
               Home
             </Link>
             <span>/</span>
-            <Link
-              href="/cart"
-              className="hover:text-spice-gold transition-colors"
-            >
+            <Link href="/cart" className="hover:text-spice-gold transition-colors">
               Cart
             </Link>
             <span>/</span>
@@ -242,6 +405,7 @@ export default function OrderPage() {
               </h2>
 
               <div className="flex flex-col gap-5">
+                {/* Name */}
                 <Field
                   label="Full Name"
                   name="fullName"
@@ -252,6 +416,8 @@ export default function OrderPage() {
                   error={errors.fullName}
                   required
                 />
+
+                {/* Phone */}
                 <Field
                   label="Phone Number"
                   name="phone"
@@ -262,32 +428,118 @@ export default function OrderPage() {
                   error={errors.phone}
                   required
                 />
+
+                {/* City Dropdown */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="city" className="text-sm font-medium text-dark-text font-body">
+                    City<span className="text-chilli-red ml-0.5">*</span>
+                  </label>
+                  <select
+                    id="city"
+                    name="city"
+                    value={fields.city}
+                    onChange={handleCityChange}
+                    className={`w-full rounded-xl border px-4 py-2.5 text-sm font-body text-dark-text outline-none focus:ring-2 focus:ring-spice-gold bg-cream transition-colors ${
+                      errors.city ? "border-red-400 focus:ring-red-300" : "border-spice-gold/30"
+                    }`}
+                  >
+                    <option value="">Select city…</option>
+                    {CITIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.city && (
+                    <p className="text-xs text-red-500 font-body">{errors.city}</p>
+                  )}
+                </div>
+
+                {/* Area Dropdown */}
+                {fields.city && (
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="area" className="text-sm font-medium text-dark-text font-body">
+                      Area<span className="text-chilli-red ml-0.5">*</span>
+                    </label>
+                    {areas.length > 0 ? (
+                      <select
+                        id="area"
+                        name="area"
+                        value={fields.area}
+                        onChange={handleAreaChange}
+                        className={`w-full rounded-xl border px-4 py-2.5 text-sm font-body text-dark-text outline-none focus:ring-2 focus:ring-spice-gold bg-cream transition-colors ${
+                          errors.area
+                            ? "border-red-400 focus:ring-red-300"
+                            : "border-spice-gold/30"
+                        }`}
+                      >
+                        {areas.map((a) => (
+                          <option key={a.name} value={a.name}>
+                            {a.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        readOnly
+                        value="Main Area"
+                        className="w-full rounded-xl border border-spice-gold/30 px-4 py-2.5 text-sm font-body text-muted-text bg-cream/60 outline-none"
+                      />
+                    )}
+                    {errors.area && (
+                      <p className="text-xs text-red-500 font-body">{errors.area}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Map Picker */}
+                {fields.city && (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-sm font-medium text-dark-text font-body">
+                      Pin Your Location
+                      <span className="text-muted-text font-normal ml-1">(optional — drag or tap the map)</span>
+                    </p>
+                    <MapPicker
+                      center={mapCenter}
+                      position={mapPosition}
+                      onPositionChange={handleMapMove}
+                    />
+                    {mapCoords && (
+                      <p className="text-xs text-muted-text font-body">
+                        📍 {mapCoords.lat.toFixed(6)}, {mapCoords.lng.toFixed(6)}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Landmark */}
                 <Field
-                  label="Delivery Address"
-                  name="address"
+                  label="Nearby Landmark"
+                  name="landmark"
                   type="text"
-                  placeholder="Street / Tole / Landmark"
-                  value={fields.address}
+                  placeholder="e.g. Near big ground, opposite school, red gate"
+                  value={fields.landmark}
                   onChange={handleChange}
-                  error={errors.address}
-                  required
+                  optional
                 />
+
+                {/* House Details */}
                 <Field
-                  label="City"
-                  name="city"
+                  label="House / Flat Details"
+                  name="houseDetails"
                   type="text"
-                  placeholder="Kathmandu"
-                  value={fields.city}
+                  placeholder="e.g. 3rd floor, blue gate, flat 4B"
+                  value={fields.houseDetails}
                   onChange={handleChange}
-                  error={errors.city}
-                  required
+                  optional
                 />
+
+                {/* Special Instructions */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-dark-text font-body">
                     Special Instructions
-                    <span className="text-muted-text font-normal ml-1">
-                      (optional)
-                    </span>
+                    <span className="text-muted-text font-normal ml-1">(optional)</span>
                   </label>
                   <textarea
                     name="instructions"
@@ -315,12 +567,11 @@ export default function OrderPage() {
                 disabled={loading || state.submitting}
                 className="mt-8 w-full flex items-center justify-center gap-2 bg-chilli-red hover:bg-chilli-red/90 disabled:opacity-60 disabled:cursor-not-allowed text-cream font-body font-semibold text-sm rounded-full py-3.5 transition-colors"
               >
-                <WhatsAppIcon />
-                {loading || state.submitting ? "Placing Order…" : "Place Order via WhatsApp"}
+                {loading || state.submitting ? "Placing Order…" : "Place Order"}
               </button>
 
               <p className="text-center text-xs text-muted-text font-body mt-3">
-                We will contact you on WhatsApp to confirm your order.
+                We will call you to confirm your order before delivery.
               </p>
             </div>
           </form>
@@ -340,9 +591,7 @@ export default function OrderPage() {
                       <p className="text-sm font-medium font-body text-dark-text truncate">
                         {item.product.name}
                       </p>
-                      <p className="text-xs text-muted-text font-body">
-                        Qty: {item.quantity}
-                      </p>
+                      <p className="text-xs text-muted-text font-body">Qty: {item.quantity}</p>
                     </div>
                     <span className="text-sm font-body font-semibold text-spice-gold shrink-0">
                       ₹{item.product.price * item.quantity}
@@ -371,9 +620,7 @@ export default function OrderPage() {
                 <div className="h-px bg-spice-gold/20 my-1" />
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-dark-text">Total</span>
-                  <span className="font-bold text-spice-gold text-xl">
-                    ₹{total}
-                  </span>
+                  <span className="font-bold text-spice-gold text-xl">₹{total}</span>
                 </div>
               </div>
             </div>
@@ -393,6 +640,7 @@ function Field({
   onChange,
   error,
   required,
+  optional,
 }: {
   label: string;
   name: string;
@@ -402,12 +650,14 @@ function Field({
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string;
   required?: boolean;
+  optional?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={name} className="text-sm font-medium text-dark-text font-body">
         {label}
         {required && <span className="text-chilli-red ml-0.5">*</span>}
+        {optional && <span className="text-muted-text font-normal ml-1">(optional)</span>}
       </label>
       <input
         id={name}
@@ -418,9 +668,7 @@ function Field({
         placeholder={placeholder}
         required={required}
         className={`w-full rounded-xl border px-4 py-2.5 text-sm font-body text-dark-text placeholder:text-muted-text outline-none focus:ring-2 focus:ring-spice-gold bg-cream transition-colors ${
-          error
-            ? "border-red-400 focus:ring-red-300"
-            : "border-spice-gold/30"
+          error ? "border-red-400 focus:ring-red-300" : "border-spice-gold/30"
         }`}
       />
       {error && <p className="text-xs text-red-500 font-body">{error}</p>}
@@ -428,23 +676,3 @@ function Field({
   );
 }
 
-function WhatsAppIcon({
-  size = 18,
-  color = "currentColor",
-}: {
-  size?: number;
-  color?: string;
-}) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill={color}
-      aria-hidden="true"
-    >
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
-    </svg>
-  );
-}
