@@ -207,42 +207,6 @@ export default function OrderPage() {
     return parts.filter(Boolean).join(", ");
   }
 
-  function buildWhatsAppMessage(orderId: string, date: string): string {
-    const itemLines = items
-      .map((i) => `🌶️ ${i.product.name} x${i.quantity} = Rs ${i.product.price * i.quantity}`)
-      .join("\n");
-
-    const coordsLine = mapCoords
-      ? `${mapCoords.lat.toFixed(6)}, ${mapCoords.lng.toFixed(6)}`
-      : "Not picked";
-
-    const giftLine = giftPackaging
-      ? `Yes Rs ${GIFT_FEE}`
-      : "No";
-
-    return encodeURIComponent(
-      `🛒 *New Order Received!*\n` +
-        `*Order ID:* ${orderId}\n` +
-        `*Date:* ${date}\n\n` +
-        `*Customer Details:*\n` +
-        `👤 Name: ${fields.fullName}\n` +
-        `📞 Phone: ${fields.phone}\n\n` +
-        `*Delivery Address:*\n` +
-        `🏙️ City: ${fields.city}\n` +
-        `📍 Area: ${fields.area}\n` +
-        `🗺️ Map: ${coordsLine}\n` +
-        `🏠 Landmark: ${fields.landmark.trim() || "Not provided"}\n` +
-        `🚪 House: ${fields.houseDetails.trim() || "Not provided"}\n\n` +
-        `*Order Items:*\n${itemLines}\n\n` +
-        `*Order Summary:*\n` +
-        `Subtotal: Rs ${subtotal}\n` +
-        `Delivery: Rs ${DELIVERY_FEE}\n` +
-        `Gift Packaging: ${giftLine}\n` +
-        `*TOTAL: Rs ${total}*\n\n` +
-        `Payment: Cash on Delivery`
-    );
-  }
-
   async function handleOrder(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!validate()) return;
@@ -319,9 +283,6 @@ export default function OrderPage() {
         total,
       })
     );
-
-    const msg = buildWhatsAppMessage(orderId, date);
-    window.open(`https://wa.me/9779803904724?text=${msg}`, "_blank");
 
     clearCart();
     router.push("/order-confirmation");
