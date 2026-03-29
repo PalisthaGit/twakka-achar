@@ -1,38 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { products as allProducts } from "@/src/constants/products";
+import { useCart } from "@/src/lib/CartContext";
+import type { Product } from "@/src/types/product";
 
-const products = [
-  {
-    id: 1,
-    name: "Timur Ko Achar",
-    description:
-      "A tingling Sichuan pepper pickle with a citrusy burst — the classic Nepali table condiment.",
-    price: "₹250",
-    unit: "jar",
-    rating: 5,
-    emoji: "🌶️",
-  },
-  {
-    id: 2,
-    name: "Golbheda Ko Achar",
-    description:
-      "Sun-dried tomato pickle slow-roasted with sesame and mustard oil. Rich, smoky, irresistible.",
-    price: "₹220",
-    unit: "jar",
-    rating: 5,
-    emoji: "🍅",
-  },
-  {
-    id: 3,
-    name: "Aaul Ko Achar",
-    description:
-      "Hog plum pickle with a perfect sweet-tangy punch — pairs beautifully with rice and dal.",
-    price: "₹200",
-    unit: "jar",
-    rating: 4,
-    emoji: "🫙",
-  },
-];
+const featuredProducts = allProducts.slice(0, 3);
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -59,6 +34,67 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
+function ProductCard({ product }: { product: Product }) {
+  const { addToCart } = useCart();
+  const [added, setAdded] = useState(false);
+
+  function handleAddToCart() {
+    addToCart(product);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-spice-gold/10 flex flex-col overflow-hidden hover:shadow-md transition-shadow">
+      {/* Product image */}
+      <div className="aspect-[4/3] bg-cream border-b border-spice-gold/10 relative overflow-hidden">
+        <Image
+          src="/image.png"
+          alt={product.name}
+          fill
+          className="object-cover"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        />
+      </div>
+
+      {/* Card body */}
+      <div className="flex flex-col gap-3 p-5 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-heading text-dark-text text-lg font-bold leading-snug">
+            {product.name}
+          </h3>
+          <span className="text-spice-gold font-semibold text-sm font-body whitespace-nowrap">
+            ₹{product.price} / jar
+          </span>
+        </div>
+
+        <p className="text-muted-text text-sm leading-relaxed font-body flex-1">
+          {product.description}
+        </p>
+
+        <StarRating rating={product.rating} />
+
+        {/* Actions */}
+        <div className="flex gap-2 mt-1 font-body">
+          <button
+            disabled={!product.inStock}
+            onClick={handleAddToCart}
+            className="flex-1 bg-chilli-red hover:bg-chilli-red/90 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold py-2.5 rounded-full transition-colors"
+          >
+            {added ? "Added ✓" : "Add to Cart"}
+          </button>
+          <Link
+            href={`/products/${product.id}`}
+            className="flex-1 border border-chilli-red text-chilli-red hover:bg-chilli-red/5 text-sm font-semibold py-2.5 rounded-full text-center transition-colors"
+          >
+            View Details
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function FeaturedProducts() {
   return (
     <section className="bg-cream py-20">
@@ -78,53 +114,8 @@ export default function FeaturedProducts() {
 
         {/* Product grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className="bg-white rounded-2xl shadow-sm border border-spice-gold/10 flex flex-col overflow-hidden hover:shadow-md transition-shadow"
-            >
-              {/* Product image */}
-              <div className="aspect-[4/3] bg-cream border-b border-spice-gold/10 relative overflow-hidden">
-                <Image
-                  src="/image.png"
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                />
-              </div>
-
-              {/* Card body */}
-              <div className="flex flex-col gap-3 p-5 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-heading text-dark-text text-lg font-bold leading-snug">
-                    {product.name}
-                  </h3>
-                  <span className="text-spice-gold font-semibold text-sm font-body whitespace-nowrap">
-                    {product.price} / {product.unit}
-                  </span>
-                </div>
-
-                <p className="text-muted-text text-sm leading-relaxed font-body flex-1">
-                  {product.description}
-                </p>
-
-                <StarRating rating={product.rating} />
-
-                {/* Actions */}
-                <div className="flex gap-2 mt-1 font-body">
-                  <button className="flex-1 bg-chilli-red hover:bg-chilli-red/90 text-white text-sm font-semibold py-2.5 rounded-full transition-colors">
-                    Add to Cart
-                  </button>
-                  <Link
-                    href={`/products/${product.id}`}
-                    className="flex-1 border border-chilli-red text-chilli-red hover:bg-chilli-red/5 text-sm font-semibold py-2.5 rounded-full text-center transition-colors"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
-            </div>
+          {featuredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
 

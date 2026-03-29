@@ -23,15 +23,22 @@ interface CartContextValue {
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
+  giftPackaging: boolean;
+  giftMessage: string;
+  setGiftPackaging: (v: boolean) => void;
+  setGiftMessage: (v: string) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
 const STORAGE_KEY = "twakka-cart";
+const GIFT_STORAGE_KEY = "twakka-gift";
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [giftPackaging, setGiftPackagingState] = useState(false);
+  const [giftMessage, setGiftMessageState] = useState("");
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -39,6 +46,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         setItems(JSON.parse(stored));
+      }
+      const giftStored = localStorage.getItem(GIFT_STORAGE_KEY);
+      if (giftStored) {
+        const { packaging, message } = JSON.parse(giftStored);
+        setGiftPackagingState(packaging ?? false);
+        setGiftMessageState(message ?? "");
       }
     } catch {
       // ignore parse errors
@@ -52,6 +65,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     }
   }, [items, hydrated]);
+
+  // Persist gift state
+  useEffect(() => {
+    if (hydrated) {
+      localStorage.setItem(
+        GIFT_STORAGE_KEY,
+        JSON.stringify({ packaging: giftPackaging, message: giftMessage })
+      );
+    }
+  }, [giftPackaging, giftMessage, hydrated]);
 
   const addToCart = useCallback((product: Product, quantity = 1) => {
     setItems((prev) => {
@@ -85,6 +108,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => {
     setItems([]);
+    setGiftPackagingState(false);
+    setGiftMessageState("");
+  }, []);
+
+  const setGiftPackaging = useCallback((v: boolean) => {
+    setGiftPackagingState(v);
+  }, []);
+
+  const setGiftMessage = useCallback((v: string) => {
+    setGiftMessageState(v);
   }, []);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -103,6 +136,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         totalItems,
         subtotal,
+        giftPackaging,
+        giftMessage,
+        setGiftPackaging,
+        setGiftMessage,
       }}
     >
       {children}

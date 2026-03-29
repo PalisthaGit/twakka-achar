@@ -22,9 +22,12 @@ const EMPTY_FORM: FormFields = {
   instructions: "",
 };
 
+const GIFT_FEE = 50;
+
 export default function OrderPage() {
-  const { items, subtotal, clearCart } = useCart();
-  const total = subtotal + DELIVERY_FEE;
+  const { items, subtotal, clearCart, giftPackaging, giftMessage } = useCart();
+  const giftFee = giftPackaging ? GIFT_FEE : 0;
+  const total = subtotal + DELIVERY_FEE + giftFee;
 
   const [fields, setFields] = useState<FormFields>(EMPTY_FORM);
   const [errors, setErrors] = useState<Partial<FormFields>>({});
@@ -49,6 +52,10 @@ export default function OrderPage() {
 
     const instructions = fields.instructions.trim() || "None";
 
+    const giftLine = giftPackaging
+      ? `🎁 Gift Packaging: Yes\n${giftMessage.trim() ? `💌 Gift Message: ${giftMessage.trim()}\n` : ""}`
+      : "";
+
     return encodeURIComponent(
       `🛒 *New Order from Twakka Achar*\n\n` +
         `*Customer Details:*\n` +
@@ -57,9 +64,11 @@ export default function OrderPage() {
         `Address: ${fields.address}, ${fields.city}\n` +
         `Special Instructions: ${instructions}\n\n` +
         `*Order Items:*\n${itemLines}\n\n` +
+        (giftLine ? `*Gift Details:*\n${giftLine}\n` : "") +
         `*Order Summary:*\n` +
         `Subtotal: ₹${subtotal}\n` +
         `Delivery: ₹${DELIVERY_FEE}\n` +
+        (giftPackaging ? `Gift Packaging: ₹${GIFT_FEE}\n` : "") +
         `*Total: ₹${total}*\n\n` +
         `Payment: Cash on Delivery\n\n` +
         `Thank you for ordering from Twakka Achar! 🙏`
@@ -280,6 +289,12 @@ export default function OrderPage() {
                       <span className="text-muted-text">Delivery</span>
                       <span>₹{DELIVERY_FEE}</span>
                     </div>
+                    {giftPackaging && (
+                      <div className="flex justify-between text-dark-text">
+                        <span className="text-muted-text">🎁 Gift Packaging</span>
+                        <span>₹{GIFT_FEE}</span>
+                      </div>
+                    )}
                     <div className="h-px bg-spice-gold/20 my-1" />
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-dark-text">Total</span>

@@ -393,6 +393,14 @@ export default function ProductsClient() {
                     ? "Try a different search term."
                     : "Try adjusting or resetting the filters."}
                 </p>
+                {searchQuery && (
+                  <Link
+                    href="/products"
+                    className="mt-4 bg-chilli-red hover:bg-chilli-red/90 text-cream font-body font-semibold text-sm rounded-full px-6 py-2.5 transition-colors"
+                  >
+                    Clear Search
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">

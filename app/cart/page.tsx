@@ -4,10 +4,22 @@ import Link from "next/link";
 import { useCart } from "@/src/lib/CartContext";
 
 const DELIVERY_FEE = 70;
+const GIFT_FEE = 50;
 
 export default function CartPage() {
-  const { items, removeFromCart, updateQuantity, subtotal } = useCart();
-  const total = subtotal + DELIVERY_FEE;
+  const {
+    items,
+    removeFromCart,
+    updateQuantity,
+    subtotal,
+    giftPackaging,
+    giftMessage,
+    setGiftPackaging,
+    setGiftMessage,
+  } = useCart();
+
+  const giftFee = giftPackaging ? GIFT_FEE : 0;
+  const total = subtotal + DELIVERY_FEE + giftFee;
 
   return (
     <div className="min-h-screen bg-cream">
@@ -115,8 +127,48 @@ export default function CartPage() {
               </Link>
             </div>
 
-            {/* Order Summary */}
-            <div className="lg:w-80 xl:w-96 shrink-0">
+            {/* Right column: Gift Packaging + Order Summary */}
+            <div className="lg:w-80 xl:w-96 shrink-0 flex flex-col gap-4">
+              {/* Gift Packaging */}
+              <div className="bg-white rounded-2xl shadow-sm border-2 border-spice-gold/40 p-5">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <span className="text-2xl" aria-hidden="true">🎁</span>
+                  <h2 className="font-heading font-bold text-dark-text text-lg">
+                    Gift Packaging
+                  </h2>
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={giftPackaging}
+                    onChange={(e) => setGiftPackaging(e.target.checked)}
+                    className="accent-spice-gold w-4 h-4 rounded"
+                  />
+                  <span className="text-sm font-body text-dark-text">
+                    Add Gift Packaging{" "}
+                    <span className="text-spice-gold font-semibold">(+₹50)</span>
+                  </span>
+                </label>
+
+                {giftPackaging && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium font-body text-dark-text mb-1.5">
+                      Add a personal message{" "}
+                      <span className="text-muted-text font-normal">(optional)</span>
+                    </label>
+                    <textarea
+                      value={giftMessage}
+                      onChange={(e) => setGiftMessage(e.target.value)}
+                      rows={3}
+                      placeholder="Write your heartfelt message here..."
+                      className="w-full rounded-xl border border-spice-gold/30 bg-cream px-4 py-2.5 text-sm font-body text-dark-text placeholder:text-muted-text outline-none focus:ring-2 focus:ring-spice-gold resize-none"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Order Summary */}
               <div className="bg-white rounded-2xl shadow-sm border border-spice-gold/10 p-6 sticky top-20">
                 <h2 className="font-heading font-bold text-dark-text text-xl mb-5">
                   Order Summary
@@ -134,6 +186,12 @@ export default function CartPage() {
                     <span className="text-muted-text">Delivery Fee</span>
                     <span>₹{DELIVERY_FEE}</span>
                   </div>
+                  {giftPackaging && (
+                    <div className="flex justify-between text-dark-text">
+                      <span className="text-muted-text">🎁 Gift Packaging</span>
+                      <span>₹{GIFT_FEE}</span>
+                    </div>
+                  )}
                   <div className="h-px bg-spice-gold/20 my-1" />
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-dark-text text-base">

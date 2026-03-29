@@ -10,15 +10,15 @@ const badges = [
     id: 2,
     title: "Fast Delivery",
     description:
-      "Orders dispatched within 24 hours and delivered fresh to your doorstep across India.",
+      "Orders dispatched within 24 hours and delivered fresh to your doorstep across Nepal.",
     icon: <TruckIcon />,
   },
   {
     id: 3,
-    title: "Easy Returns",
+    title: "We're Here to Help",
     description:
-      "Not satisfied? We offer hassle-free returns within 7 days — no questions asked.",
-    icon: <ReturnIcon />,
+      "Have a question or issue? Contact us on WhatsApp or email and we'll sort it out for you.",
+    icon: <HeadphonesIcon />,
   },
 ];
 
@@ -64,7 +64,7 @@ function TruckIcon() {
   );
 }
 
-function ReturnIcon() {
+function HeadphonesIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -78,8 +78,9 @@ function ReturnIcon() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-      <path d="M3 3v5h5" />
+      <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+      <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" />
+      <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
     </svg>
   );
 }
